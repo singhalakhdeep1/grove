@@ -89,4 +89,25 @@ export default function MyCoursesPage() {
                                     <Button variant="ghost" size="icon" onClick={() => router.push(`/courses/${course.id}`)}>
                                         <Eye className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => router.push(`/co
+                                    <Button variant="ghost" size="icon" onClick={() => router.push(`/courses/${course.id}/edit`)}>
+                                        <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() => {
+                                            if (confirm('Delete this course? This cannot be undone.')) deleteCourse.mutate(course.id)
+                                        }}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
