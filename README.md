@@ -185,84 +185,65 @@ git clone https://github.com/yourusername/grove.git
 cd grove
 ```
 
-2. **Set up environment variables**
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
-
-3. **Start services with Docker**
+2. **Start services with Docker**
 ```bash
 docker-compose up -d
 ```
 
-4. **Install dependencies**
-```bash
-# Backend
-cd backend
-npm install
-npx prisma generate
-npx prisma migrate dev
-
-# Frontend
-cd ../frontend
-npm install
-```
-
-5. **Start development servers**
-```bash
-# Backend (port 3000)
-cd backend
-npm run start:dev
-
-# Frontend (port 3001)
-cd frontend
-npm run dev
-```
-
-6. **Access the application**
+3. **Access the application**
 - Frontend: http://localhost:3001
 - Backend API: http://localhost:3000
 - API Documentation: http://localhost:3000/api
 
+For detailed setup instructions, see [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md)
+
 ### Manual Setup (Without Docker)
 
-See [QUICK-START.md](QUICK-START.md) for detailed manual setup instructions.
+See [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) for detailed manual setup instructions.
 
 ---
 
-## 📚 API Documentation
+## 📚 Documentation
 
-### Authentication Endpoints
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[GETTING-STARTED.md](docs/GETTING-STARTED.md)** - Detailed setup and installation guide
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System architecture and technical details
+- **[FEATURES.md](docs/FEATURES.md)** - Complete feature documentation
+- **[PROJECT-SUMMARY.md](docs/PROJECT-SUMMARY.md)** - Project overview for hiring managers
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+
+### API Documentation
+
+The backend includes comprehensive API documentation accessible at:
+- **Swagger UI**: http://localhost:3000/api
+- **OpenAPI Spec**: http://localhost:3000/api-json
+
+### Key API Endpoints
+
+#### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh access token
-- `POST /api/auth/logout` - User logout
 - `GET /api/auth/profile` - Get user profile
 
-### Course Endpoints
+#### Courses
 - `GET /api/courses` - List all courses
 - `GET /api/courses/:id` - Get course details
 - `POST /api/courses` - Create course (instructor/admin)
-- `PUT /api/courses/:id` - Update course
-- `POST /api/courses/:id/publish` - Publish course
 
-### Gamification Endpoints
+#### Gamification
 - `GET /api/gamification/progress` - Get user XP progress
-- `GET /api/gamification/achievements` - Get user achievements
 - `GET /api/gamification/leaderboard` - Get leaderboard
 
-### Analytics Endpoints
+#### Analytics
 - `GET /api/analytics/realtime` - Get real-time metrics
-- `GET /api/analytics/user-engagement` - Get user engagement data
 - `GET /api/analytics/dashboard` - Get dashboard summary
 
-### Subscription Endpoints
+#### Subscriptions
 - `GET /api/subscriptions/plans` - Get available plans
 - `POST /api/subscriptions/subscribe` - Subscribe to plan
-- `GET /api/subscriptions/my-subscription` - Get user subscription
-
-For complete API documentation, visit: http://localhost:3000/api
 
 ---
 
