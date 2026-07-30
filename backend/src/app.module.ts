@@ -26,6 +26,24 @@ import { MentorshipModule } from './mentorship/mentorship.module';
 import { GamificationModule } from './gamification/gamification.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 
+// AI Recommendations
+import { RecommendationsModule } from './recommendations/recommendations.module';
+
+// Real-time Analytics
+import { RealtimeAnalyticsModule } from './realtime-analytics/realtime-analytics.module';
+
+// Interactive Video
+import { VideoModule } from './video/video.module';
+
+// Advanced Gamification
+import { AdvancedGamificationModule } from './advanced-gamification/advanced-gamification.module';
+
+// Two-Factor Authentication
+import { TwoFactorModule } from './two-factor/two-factor.module';
+
+// Subscriptions & Payments
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+
 @Module({
   imports: [
     // Configuration
@@ -77,6 +95,24 @@ import { AnalyticsModule } from './analytics/analytics.module';
     // Gamification & Analytics
     GamificationModule,
     AnalyticsModule,
+
+    // AI Recommendations
+    RecommendationsModule,
+
+    // Real-time Analytics
+    RealtimeAnalyticsModule,
+
+    // Interactive Video
+    VideoModule,
+
+    // Advanced Gamification
+    AdvancedGamificationModule,
+
+    // Two-Factor Authentication
+    TwoFactorModule,
+
+    // Subscriptions & Payments
+    SubscriptionsModule,
   ],
 })
 export class AppModule { }

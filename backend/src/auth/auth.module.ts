@@ -8,11 +8,13 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { FacebookStrategy } from './strategies/facebook.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
+import { TwoFactorModule } from '../two-factor/two-factor.module';
 
 @Module({
     imports: [
         PrismaModule,
         EmailModule,
+        TwoFactorModule,
         PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'your-secret-key',

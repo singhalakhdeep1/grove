@@ -4,17 +4,19 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: learning-platform-db
+    container_name: grove-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: learning_platform
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: grove
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - grove-network
     healthcheck:
-      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,16 +24,17 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: learning-platform-redis
+    container_name: grove-redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
     volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
+      - redis-data:/data
+    networks:
+      - grove-network
     healthcheck:
-      test: [ 'CMD', 'redis-cli', 'ping' ]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
 
   # Backend API
@@ -39,24 +42,53 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: learning-platform-backend
-    ports:
-      - '3000:3000'
+    container_name: grove-backend
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/learning_platform?schema=public
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/grove
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key-change-this-in-production
+      PORT: 3000
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: npm run start:dev
+    networks:
+      - grove-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: grove-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - backend
+    networks:
+      - grove-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
 
 volumes:
-  postgres_data:
-  redis_data:
+  postgres-data:
+  redis-data:
+
+networks:
+  grove-network:
+    driver: bridge

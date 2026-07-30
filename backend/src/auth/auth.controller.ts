@@ -39,6 +39,12 @@ export class AuthController {
         return this.authService.login(loginDto);
     }
 
+    @Post('login-2fa')
+    @HttpCode(HttpStatus.OK)
+    async loginWithTwoFactor(@Body() body: { userId: string; token: string }) {
+        return this.authService.loginWithTwoFactor(body.userId, body.token);
+    }
+
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
     async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {

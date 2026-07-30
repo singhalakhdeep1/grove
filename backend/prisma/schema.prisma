@@ -22,6 +22,9 @@ model User {
   lastLoginAt       DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
+  twoFactorEnabled  Boolean              @default(false)
+  twoFactorSecret   String?              // TOTP secret key
+  backupCodes       String[]             // Backup codes for 2FA
   
   // Relations
   profile           UserProfile?
@@ -54,6 +57,20 @@ model User {
   messagesFrom      DirectMessage[]     @relation("Sender")
   messagesTo        DirectMessage[]     @relation("Receiver")
   sessions          Session[]
+  courseInteractions UserCourseInteraction[]
+  recommendations   CourseRecommendation[]
+  videoBookmarks    VideoBookmark[]
+  videoNotes        VideoNote[]
+  playbackSessions  VideoPlaybackSession[]
+  teamMemberships   TeamMember[]
+  seasonalAchievements UserSeasonalAchievement[]
+  virtualCurrency   VirtualCurrency?
+  currencyTransactions CurrencyTransaction[]
+  rewardPurchases   RewardPurchase[]
+  subscription       UserSubscription?
+  payments           Payment[]
+  promoUsages        PromotionalCodeUsage[]
+  invoices           Invoice[]
 
   @@index([email])
   @@map("users")
@@ -146,6 +163,8 @@ model Course {
   reviews         CourseReview[]
   tags            CourseTag[]
   certificates    Certificate[]
+  interactions    UserCourseInteraction[]
+  recommendations CourseRecommendation[]
   
   @@index([slug])
   @@index([instructorId])
@@ -207,6 +226,10 @@ model Lesson {
   progress    LessonProgress[]
   quiz        Quiz?
   assignment  Assignment?
+  bookmarks   VideoBookmark[]
+  notes       VideoNote[]
+  playbackSessions VideoPlaybackSession[]
+  analytics   VideoAnalytics?
   
   @@map("lessons")
 }
@@ -1079,4 +1102,578 @@ enum NotificationType {
   SESSION_REMINDER
   MENTOR_REQUEST
   GROUP_INVITATION
+}
+
+// ============================================
+// AI RECOMMENDATIONS
+// ============================================
+
+model UserCourseInteraction {
+  id          String                @id @default(uuid())
+  userId      String
+  courseId    String
+  action      InteractionAction
+  duration    Int?                  // Time spent in seconds
+  rating      Int?                  // 1-5 rating
+  completed   Boolean               @default(false)
+  timestamp   DateTime              @default(now())
+  
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, courseId])
+  @@index([userId, timestamp])
+  @@map("user_course_interactions")
+}
+
+enum InteractionAction {
+  VIEWED
+  ENROLLED
+  LESSON_STARTED
+  LESSON_COMPLETED
+  COURSE_COMPLETED
+  RATED
+  REVIEWED
+  BOOKMARKED
+  SHARED
+}
+
+model CourseRecommendation {
+  id          String              @id @default(uuid())
+  userId      String
+  courseId    String
+  score       Float               // Recommendation confidence score
+  reason      RecommendationReason
+  algorithm   RecommendationAlgorithm
+  createdAt   DateTime            @default(now())
+  clicked     Boolean             @default(false)
+  enrolled    Boolean             @default(false)
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, courseId, algorithm])
+  @@index([userId, score])
+  @@map("course_recommendations")
+}
+
+enum RecommendationReason {
+  SIMILAR_USERS
+  CONTENT_BASED
+  POPULAR
+  TRENDING
+  CONTINUE_LEARNING
+  SKILL_BUILDING
+  CAREER_PATH
+  SOCIAL_PROOF
+}
+
+enum RecommendationAlgorithm {
+  COLLABORATIVE_FILTERING
+  CONTENT_BASED
+  HYBRID
+  POPULARITY_BASED
+  TRENDING
+  DEEP_LEARNING
+}
+
+// ============================================
+// REAL-TIME ANALYTICS
+// ============================================
+
+model RealTimeAnalytics {
+  id          String    @id @default(uuid())
+  metric      String    // 'active_users', 'enrollments', 'course_completions', etc.
+  value       Float
+  timestamp   DateTime  @default(now())
+  metadata    String?   // JSON string for additional context
+  
+  @@index([metric, timestamp])
+  @@map("real_time_analytics")
+}
+
+model AnalyticsEvent {
+  id          String          @id @default(uuid())
+  userId      String?
+  eventType   EventType
+  eventData   String          @db.Text  // JSON string
+  sessionId   String?
+  timestamp   DateTime        @default(now())
+  
+  @@index([eventType, timestamp])
+  @@index([userId, timestamp])
+  @@map("analytics_events")
+}
+
+enum EventType {
+  PAGE_VIEW
+  COURSE_VIEW
+  LESSON_START
+  LESSON_COMPLETE
+  QUIZ_START
+  QUIZ_COMPLETE
+  ENROLLMENT
+  CERTIFICATE_EARNED
+  FORUM_VISIT
+  LIVE_SESSION_JOIN
+  MENTORSHIP_REQUEST
+  SEARCH_QUERY
+  FILTER_APPLY
+  RECOMMENDATION_CLICK
+  PAYMENT_INITIATED
+  PAYMENT_COMPLETED
+}
+
+// ============================================
+// INTERACTIVE VIDEO FEATURES
+// ============================================
+
+model VideoBookmark {
+  id          String      @id @default(uuid())
+  userId      String
+  lessonId    String
+  timestamp   Int         // Video timestamp in seconds
+  title       String?
+  description String?     @db.Text
+  createdAt   DateTime    @default(now())
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, lessonId, timestamp])
+  @@index([userId, lessonId])
+  @@map("video_bookmarks")
+}
+
+model VideoNote {
+  id          String      @id @default(uuid())
+  userId      String
+  lessonId    String
+  timestamp   Int         // Video timestamp in seconds
+  content     String      @db.Text
+  isPrivate   Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, lessonId])
+  @@map("video_notes")
+}
+
+model VideoPlaybackSession {
+  id          String      @id @default(uuid())
+  userId      String
+  lessonId    String
+  startedAt   DateTime    @default(now())
+  endedAt     DateTime?
+  totalWatchTime Int       // Total seconds watched
+  completionRate Float     // 0-1 percentage of video watched
+  lastPosition Int         // Last timestamp watched
+  playbackSpeed Float      @default(1.0)
+  quality     String?     // Video quality (1080p, 720p, etc.)
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson      Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, lessonId])
+  @@map("video_playback_sessions")
+}
+
+model VideoAnalytics {
+  id          String      @id @default(uuid())
+  lessonId    String
+  totalViews  Int         @default(0)
+  totalWatchTime Int      @default(0) // Total seconds across all views
+  averageCompletionRate Float @default(0)
+  averageWatchTime Int    @default(0)
+  dropOffPoints String    @db.Text // JSON array of timestamps where users drop off
+  heatmapData String      @db.Text // JSON array of engagement by timestamp
+  updatedAt   DateTime    @updatedAt
+  
+  lesson      Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  
+  @@unique([lessonId])
+  @@map("video_analytics")
+}
+
+// ============================================
+// ADVANCED GAMIFICATION
+// ============================================
+
+model TeamChallenge {
+  id          String              @id @default(uuid())
+  name        String
+  description String              @db.Text
+  type        ChallengeType
+  startDate   DateTime
+  endDate     DateTime
+  targetValue Int                 // Target value for the challenge
+  rewardXP    Int                 @default(0)
+  rewardBadge String?
+  isActive    Boolean             @default(true)
+  maxTeams    Int?
+  createdAt   DateTime            @default(now())
+  
+  teams       ChallengeTeam[]
+  progress    ChallengeProgress[]
+  
+  @@map("team_challenges")
+}
+
+enum ChallengeType {
+  COURSE_COMPLETION
+  QUIZ_SCORE
+  LEARNING_STREAK
+  FORUM_PARTICIPATION
+  MENTORSHIP_HOURS
+  STUDY_GROUP_ACTIVITY
+  CERTIFICATION_EARNED
+  COMBINED
+}
+
+model ChallengeTeam {
+  id          String              @id @default(uuid())
+  challengeId String
+  name        String
+  description String?             @db.Text
+  maxMembers  Int
+  currentXP   Int                 @default(0)
+  rank        Int?
+  createdAt   DateTime            @default(now())
+  
+  challenge   TeamChallenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  members     TeamMember[]
+  
+  @@map("challenge_teams")
+}
+
+model TeamMember {
+  id          String              @id @default(uuid())
+  teamId      String
+  userId      String
+  role        TeamRole            @default(MEMBER)
+  contributionXP Int              @default(0)
+  joinedAt    DateTime            @default(now())
+  
+  team        ChallengeTeam       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+enum TeamRole {
+  CAPTAIN
+  MEMBER
+}
+
+model ChallengeProgress {
+  id          String              @id @default(uuid())
+  challengeId String
+  teamId      String
+  metric      String              // e.g., 'courses_completed', 'quiz_scores'
+  value       Int                 @default(0)
+  updatedAt   DateTime            @updatedAt
+  
+  challenge   TeamChallenge       @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  team        ChallengeTeam       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([challengeId, teamId, metric])
+  @@map("challenge_progress")
+}
+
+model SeasonalEvent {
+  id          String              @id @default(uuid())
+  name        String
+  description String              @db.Text
+  theme       String              // e.g., 'summer', 'halloween', 'new_year'
+  startDate   DateTime
+  endDate     DateTime
+  multiplier  Float               @default(1.0) // XP multiplier
+  specialRewards String[]         // JSON array of special rewards
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  
+  achievements SeasonalAchievement[]
+  
+  @@map("seasonal_events")
+}
+
+model SeasonalAchievement {
+  id          String              @id @default(uuid())
+  eventId     String
+  name        String
+  description String              @db.Text
+  requirement String             // JSON string for requirement logic
+  rewardXP    Int                 @default(0)
+  rewardBadge String?
+  icon        String?
+  isLimited   Boolean             @default(true) // Limited time only
+  
+  event       SeasonalEvent       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  unlocks     UserSeasonalAchievement[]
+  
+  @@map("seasonal_achievements")
+}
+
+model UserSeasonalAchievement {
+  id              String              @id @default(uuid())
+  userId          String
+  achievementId   String
+  unlockedAt      DateTime            @default(now())
+  
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement     SeasonalAchievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId])
+  @@map("user_seasonal_achievements")
+}
+
+model VirtualCurrency {
+  id          String              @id @default(uuid())
+  userId      String              @unique
+  balance     Int                 @default(0)
+  earnedTotal Int                 @default(0)
+  spentTotal  Int                 @default(0)
+  lastUpdated DateTime            @updatedAt
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions CurrencyTransaction[]
+  
+  @@map("virtual_currency")
+}
+
+model CurrencyTransaction {
+  id          String              @id @default(uuid())
+  userId      String
+  type        TransactionType
+  amount      Int
+  description String
+  metadata    String?             @db.Text // JSON string for additional context
+  createdAt   DateTime            @default(now())
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currency    VirtualCurrency     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("currency_transactions")
+}
+
+enum TransactionType {
+  EARNED
+  SPENT
+  REFUNDED
+  BONUS
+  PENALTY
+}
+
+model RewardShop {
+  id          String              @id @default(uuid())
+  name        String
+  description String              @db.Text
+  type        RewardType
+  cost        Int                 // Virtual currency cost
+  image       String?
+  isActive    Boolean             @default(true)
+  stock       Int?                // null for unlimited
+  metadata    String?             @db.Text // JSON for reward-specific data
+  createdAt   DateTime            @default(now())
+  
+  purchases   RewardPurchase[]
+  
+  @@map("reward_shop")
+}
+
+enum RewardType {
+  BADGE
+  COURSE_DISCOUNT
+  PREMIUM_ACCESS
+  CUSTOM_AVATAR
+  CERTIFICATE_FRAME
+  MENTORSHIP_SESSION
+  PHYSICAL_ITEM
+}
+
+model RewardPurchase {
+  id          String              @id @default(uuid())
+  userId      String
+  rewardId    String
+  cost        Int
+  purchasedAt DateTime            @default(now())
+  status      PurchaseStatus      @default(COMPLETED)
+  metadata    String?             @db.Text
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reward      RewardShop          @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  
+  @@map("reward_purchases")
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================
+// SUBSCRIPTION & PAYMENT SYSTEM
+// ============================================
+
+model SubscriptionPlan {
+  id          String              @id @default(uuid())
+  name        String
+  description String              @db.Text
+  price       Float               // Monthly price
+  currency    String              @default("USD")
+  interval    SubscriptionInterval @default(MONTHLY)
+  features    String[]            // JSON array of features
+  maxCourses  Int?                // Unlimited if null
+  maxMentorshipHours Int?         // Unlimited if null
+  isActive    Boolean             @default(true)
+  stripePriceId String?            // Stripe price ID
+  createdAt   DateTime            @default(now())
+  
+  subscriptions UserSubscription[]
+  
+  @@map("subscription_plans")
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+  YEARLY
+}
+
+model UserSubscription {
+  id          String              @id @default(uuid())
+  userId      String
+  planId      String
+  status      SubscriptionStatus  @default(ACTIVE)
+  startDate   DateTime            @default(now())
+  endDate     DateTime?
+  cancelAt    DateTime?
+  stripeSubscriptionId String?
+  stripeCustomerId String?
+  autoRenew   Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        SubscriptionPlan    @relation(fields: [planId], references: [id])
+  
+  @@unique([userId])
+  @@map("user_subscriptions")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+  TRIALING
+}
+
+model Payment {
+  id          String              @id @default(uuid())
+  userId      String
+  subscriptionId String?
+  amount      Float
+  currency    String              @default("USD")
+  status      PaymentStatus       @default(PENDING)
+  paymentMethod PaymentMethod
+  stripePaymentIntentId String?
+  failureReason String?
+  metadata    String?             @db.Text // JSON for additional context
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription UserSubscription?  @relation(fields: [subscriptionId], references: [id])
+  
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  PAYPAL
+  BANK_TRANSFER
+  CRYPTO
+}
+
+model PromotionalCode {
+  id          String              @id @default(uuid())
+  code        String              @unique
+  description String?
+  discountType DiscountType
+  discountValue Float             // Percentage or fixed amount
+  maxUses     Int?                // null for unlimited
+  usedCount   Int                 @default(0)
+  validFrom   DateTime
+  validUntil  DateTime
+  applicablePlans String[]        // IDs of applicable plans
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  
+  usages      PromotionalCodeUsage[]
+  
+  @@map("promotional_codes")
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model PromotionalCodeUsage {
+  id          String              @id @default(uuid())
+  codeId      String
+  userId      String
+  discountAmount Float
+  usedAt      DateTime            @default(now())
+  
+  code        PromotionalCode     @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([codeId, userId])
+  @@map("promotional_code_usages")
+}
+
+model Invoice {
+  id          String              @id @default(uuid())
+  userId      String
+  subscriptionId String?
+  paymentId   String?
+  invoiceNumber String            @unique
+  amount      Float
+  currency    String              @default("USD")
+  status      InvoiceStatus       @default(DRAFT)
+  dueDate     DateTime
+  paidAt      DateTime?
+  items       String              @db.Text // JSON array of invoice items
+  pdfUrl      String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment     Payment?            @relation(fields: [paymentId], references: [id])
+  
+  @@map("invoices")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
 }

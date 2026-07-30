@@ -21,6 +21,7 @@ import {
 import { User, UserRole } from '@prisma/client';
 import { randomBytes } from 'crypto';
 import { EmailService } from '../email/email.service';
+import { TwoFactorService } from '../two-factor/two-factor.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +29,7 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private emailService: EmailService,
+        private twoFactorService: TwoFactorService,
     ) { }
 
     // Register new user
@@ -134,6 +136,15 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
+        // Check if 2FA is enabled
+        if (user.twoFactorEnabled) {
+            return {
+                requiresTwoFactor: true,
+                userId: user.id,
+                message: 'Two-factor authentication required',
+            };
+        }
+
         // Generate tokens
         const tokens = await this.generateTokens(user.id, user.email, user.role);
 
@@ -151,6 +162,50 @@ export class AuthService {
 
         return {
             user: userWithoutPassword,
+            ...tokens,
+        };
+    }
+
+    // Complete login with 2FA
+    async loginWithTwoFactor(userId: string, token: string) {
+        // Verify 2FA token
+        const isValid = await this.twoFactorService.verifyTwoFactorToken(userId, token);
+
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid two-factor token');
+        }
+
+        // Get user
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+                avatarUrl: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Generate tokens
+        const tokens = await this.generateTokens(user.id, user.email, user.role);
+
+        // Store refresh token
+        await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+        // Update last login
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() },
+        });
+
+        return {
+            user,
             ...tokens,
         };
     }

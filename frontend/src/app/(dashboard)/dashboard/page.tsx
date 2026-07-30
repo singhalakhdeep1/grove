@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { BookOpen, Trophy, Users, Video, TrendingUp, Clock, Star, Zap } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
-import { analyticsApi, coursesApi, gamificationApi } from '@/lib/api'
+import { realtimeAnalyticsApi, coursesApi, gamificationApi } from '@/lib/api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -18,12 +18,12 @@ export default function DashboardPage() {
 
     const { data: analytics, isLoading: analyticsLoading } = useQuery({
         queryKey: ['user-analytics'],
-        queryFn: analyticsApi.getUserAnalytics,
+        queryFn: realtimeAnalyticsApi.getUserAnalytics,
     })
 
     const { data: progress, isLoading: progressLoading } = useQuery({
         queryKey: ['learning-progress'],
-        queryFn: analyticsApi.getLearningProgress,
+        queryFn: realtimeAnalyticsApi.getLearningProgress,
     })
 
     const { data: gamification, isLoading: gamLoading } = useQuery({
