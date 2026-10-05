@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, UnauthorizedExcepti
 import { PrismaService } from '../prisma/prisma.service';
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
+import { randomInt } from 'crypto';
 
 @Injectable()
 export class TwoFactorService {
@@ -169,7 +170,7 @@ export class TwoFactorService {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     let code = '';
     for (let i = 0; i < 8; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
+      code += chars.charAt(randomInt(chars.length));
       if (i === 3 || i === 5) code += '-';
     }
     return code;
