@@ -88,7 +88,7 @@ export default function CertificationsPage() {
                                     </div>
                                     <div className="flex gap-2 mt-4">
                                         <Button variant="outline" size="sm" className="flex-1" asChild>
-                                            <a href={cert.pdfUrl} target="_blank" rel="noopener noreferrer">
+                                            <a href={cert.pdfUrl ?? undefined} target="_blank" rel="noopener noreferrer">
                                                 <Download className="h-3.5 w-3.5 mr-1.5" /> Download
                                             </a>
                                         </Button>

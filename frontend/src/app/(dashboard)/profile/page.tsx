@@ -52,7 +52,7 @@ export default function ProfilePage() {
         onError: () => toast.error('Failed to update profile'),
     })
 
-    const displayUser = profile ?? user
+    const displayUser = (profile ?? user) as any
 
     return (
         <div className="max-w-4xl space-y-6">

@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
                                 <ResponsiveContainer width={180} height={180}>
                                     <PieChart>
                                         <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={2}>
-                                            {categoryData.map((_, index) => (
+                                            {categoryData.map((_: unknown, index: number) => (
                                                 <Cell key={index} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
                                     </PieChart>
                                 </ResponsiveContainer>
                                 <div className="flex-1 space-y-2">
-                                    {categoryData.map((d, i) => (
+                                    {categoryData.map((d: any, i: number) => (
                                         <div key={d.name} className="flex items-center gap-2 text-sm">
                                             <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                                             <span className="truncate flex-1">{d.name}</span>

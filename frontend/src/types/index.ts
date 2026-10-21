@@ -30,6 +30,7 @@ export interface UserProfile {
     timezone?: string
     language: string
     skillLevel: SkillLevel
+    skills?: string[]
     totalPoints: number
     currentStreak: number
     longestStreak: number
@@ -259,6 +260,7 @@ export interface MentorProfile {
     id: string
     userId: string
     bio: string
+    title?: string
     expertise: string[]
     hourlyRate?: number
     rating: number
@@ -272,10 +274,12 @@ export interface MentorshipRequest {
     mentorId: string
     menteeId: string
     message: string
+    topic?: string
     status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
     createdAt: string
     mentor?: User
     mentee?: User
+    user?: User
 }
 
 export interface MentorshipSession {
@@ -382,7 +386,11 @@ export interface Certificate {
     userId: string
     courseId: string
     certificateCode: string
+    certificateId?: string
+    courseTitle?: string
     issuedAt: string
+    expiresAt?: string | null
+    pdfUrl?: string | null
     course?: Course
     user?: User
 }

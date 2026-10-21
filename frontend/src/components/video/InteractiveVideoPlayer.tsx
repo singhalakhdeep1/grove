@@ -84,7 +84,7 @@ export function InteractiveVideoPlayer({
 
   const loadNotes = async () => {
     try {
-      const data = await videoApi.getNotes(lessonId, true)
+      const data = await videoApi.getNotes(lessonId)
       setNotes(data)
     } catch (error) {
       console.error('Failed to load notes:', error)
@@ -93,10 +93,7 @@ export function InteractiveVideoPlayer({
 
   const startPlaybackSession = async () => {
     try {
-      const session = await videoApi.startPlayback({
-        lessonId,
-        playbackSpeed,
-      })
+      const session = await videoApi.startPlayback(lessonId, { playbackSpeed })
       setSessionId(session.id)
     } catch (error) {
       console.error('Failed to start playback session:', error)
@@ -194,8 +191,7 @@ export function InteractiveVideoPlayer({
 
   const addBookmark = async () => {
     try {
-      await videoApi.createBookmark({
-        lessonId,
+      await videoApi.createBookmark(lessonId, {
         timestamp: Math.floor(currentTime),
         title: bookmarkTitle || `Bookmark at ${formatTime(currentTime)}`,
       })
@@ -209,8 +205,7 @@ export function InteractiveVideoPlayer({
 
   const addNote = async () => {
     try {
-      await videoApi.createNote({
-        lessonId,
+      await videoApi.createNote(lessonId, {
         timestamp: Math.floor(currentTime),
         content: noteContent,
         isPrivate: true,
@@ -249,7 +244,7 @@ export function InteractiveVideoPlayer({
 
   const deleteBookmark = async (bookmarkId: string) => {
     try {
-      await videoApi.deleteBookmark(bookmarkId)
+      await videoApi.deleteBookmark(lessonId, bookmarkId)
       loadBookmarks()
     } catch (error) {
       console.error('Failed to delete bookmark:', error)
@@ -258,7 +253,7 @@ export function InteractiveVideoPlayer({
 
   const deleteNote = async (noteId: string) => {
     try {
-      await videoApi.deleteNote(noteId)
+      await videoApi.deleteNote(lessonId, noteId)
       loadNotes()
     } catch (error) {
       console.error('Failed to delete note:', error)
@@ -456,7 +451,7 @@ export function InteractiveVideoPlayer({
       )}
 
       {/* Bookmark Modal */}
-      <Modal isOpen={showBookmarkModal} onClose={() => setShowBookmarkModal(false)}>
+      <Modal open={showBookmarkModal} onClose={() => setShowBookmarkModal(false)}>
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Add Bookmark</h3>
           <Input
@@ -475,7 +470,7 @@ export function InteractiveVideoPlayer({
       </Modal>
 
       {/* Note Modal */}
-      <Modal isOpen={showNoteModal} onClose={() => setShowNoteModal(false)}>
+      <Modal open={showNoteModal} onClose={() => setShowNoteModal(false)}>
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">Add Note</h3>
           <Input

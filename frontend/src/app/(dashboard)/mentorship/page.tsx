@@ -49,7 +49,7 @@ export default function MentorshipPage() {
     })
 
     const requestMentorship = useMutation({
-        mutationFn: () => mentorshipApi.requestMentorship(selectedMentor!.id, requestForm),
+        mutationFn: () => mentorshipApi.requestMentorship({ mentorId: selectedMentor!.id, ...requestForm }),
         onSuccess: () => {
             toast.success('Mentorship request sent!')
             queryClient.invalidateQueries({ queryKey: ['mentorship-requests'] })
@@ -144,9 +144,9 @@ export default function MentorshipPage() {
                         {requestList.map((req) => (
                             <Card key={req.id}>
                                 <CardContent className="p-4 flex items-center gap-4">
-                                    <Avatar name={req.mentor?.user?.name ?? 'Mentor'} src={req.mentor?.user?.avatar} />
+                                    <Avatar name={(req.mentor as any)?.name ?? (req.mentor as any)?.user?.name ?? 'Mentor'} src={(req.mentor as any)?.avatar ?? (req.mentor as any)?.user?.avatar} />
                                     <div className="flex-1">
-                                        <p className="font-medium">{req.mentor?.user?.name}</p>
+                                        <p className="font-medium">{(req.mentor as any)?.name ?? (req.mentor as any)?.user?.name}</p>
                                         <p className="text-sm text-muted-foreground">{req.topic}</p>
                                         <p className="text-xs text-muted-foreground">{formatDate(req.createdAt)}</p>
                                     </div>

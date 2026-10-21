@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useMutation } from '@tanstack/react-query'
 import Link from 'next/link'
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import toast from 'react-hot-toast'
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
     const searchParams = useSearchParams()
     const router = useRouter()
     const token = searchParams.get('token') ?? ''
@@ -92,5 +92,13 @@ export default function ResetPasswordPage() {
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense>
+            <ResetPasswordForm />
+        </Suspense>
     )
 }
